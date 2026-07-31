@@ -1,4 +1,6 @@
 # JLPT Vocab
+<img width="963" height="931" alt="image" src="https://github.com/user-attachments/assets/a7c40a97-b6b4-4a19-9b6d-3cb849bb3b00" />
+/assets/1389b984-953b-4079-a608-1042e3742b17" />
 
 เว็บรวมคำศัพท์ JLPT N5–N1 (7,972 คำ) — อ่าน ค้นหา ท่องด้วย flashcard และทำ quiz
 ทำงานบนเบราว์เซอร์ล้วน ไม่มี backend, progress เก็บใน localStorage
@@ -33,3 +35,5 @@ pnpm build       # ได้ dist/ เอาไปวางที่ static host
 
 Monochrome minimal ตาม Aioneday Brand CI — Ink `#111111` บน Paper `#FAFAF7`,
 ฟอนต์ IBM Plex Sans Thai / Noto Sans JP / Archivo / JetBrains Mono
+<img width="927" height="659" alt="image" src="https://github.com/user-attachments/assets/d9107b51-3dae-4352-b043-ed2d278a9960" />
+<img width="1009" height="635" alt="image" src="https://github.com/user-attachments
