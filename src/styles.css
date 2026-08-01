@@ -58,7 +58,7 @@ nav button.active { background: var(--ink); color: var(--white); font-weight: 70
 
 /* ---------- browse ---------- */
 .browse-sticky {
-  position: sticky; top: 73px; z-index: 20; background: var(--paper);
+  position: sticky; top: var(--header-h, 73px); z-index: 20; background: var(--paper);
   padding: 6px 0 8px; margin-bottom: 6px;
   box-shadow: 0 6px 8px -8px rgba(17, 17, 17, 0.25);
 }
@@ -229,13 +229,13 @@ footer a { color: var(--graphite); }
 @media (max-width: 560px) {
   .brand h1 { font-size: 20px; }
   .brand .sub { display: none; }
-  .browse-sticky { top: 59px; }
+  .browse-sticky { top: var(--header-h, 59px); }
   .word-row { grid-template-columns: 1fr auto; }
   .word-row .expr { grid-column: 1 / -1; }
   .card .expr { font-size: 40px; }
   .quiz-q .expr { font-size: 42px; }
-  .lang-switch { gap: 2px; }
-  .lang-switch button { font-size: 11px; padding: 3px 6px; }
+  .lang-switch { gap: 4px; }
+  .lang-switch button { font-size: 12px; padding: 8px 10px; }
 }
 
 /* ----- language switch ----- */
