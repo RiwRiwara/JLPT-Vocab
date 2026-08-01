@@ -138,3 +138,17 @@ state. This makes it safe to translate and deploy one level at a time.
 - Runtime translation of any kind.
 - Languages other than Thai.
 - Changing the upstream word list or the progress/known-word model.
+
+## Model chosen
+
+**OpenAI `gpt-4.1-mini`**, chosen by the human partner after a 50-word bake-off
+(25 N5 + 25 N1) against `gpt-4.1` and `gpt-4o-mini`. The three disagreed on 37 of
+49 entries. `gpt-4.1` was the most accurate — it alone rendered "to open (v.t.)"
+with the correct Thai grammatical term (สกรรมกริยา) and reached for idiomatic
+Thai (ที่โหล่ for "last on the list") — but `gpt-4.1-mini` was judged good enough
+at roughly a fifth of the cost. `gpt-4o-mini` was rejected outright for sense
+errors: it rendered 会う "to meet" as พบ, เห็น (เห็น is 見る) and 明るい in its
+personality sense as สว่าง, the literal "bright as in light".
+
+Known weakness of the chosen model, accepted: it is unreliable on grammatical
+metalanguage, e.g. "(v.t.)" came back as (กริยารับ) rather than (สกรรมกริยา).
