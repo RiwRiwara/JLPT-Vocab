@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "deploy": "vite build && wrangler deploy"
+    "deploy": "vite build && wrangler deploy",
+    "translate:th": "node scripts/translate-th/cli.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
