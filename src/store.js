@@ -1,3 +1,5 @@
+import { LANGS, DEFAULT_LANG } from './lang.js'
+
 // Progress lives in localStorage — the whole app is client-side by design.
 const KEY = 'jlpt-vocab:known:v1'
 
@@ -35,5 +37,29 @@ export const store = {
   subscribe(fn) {
     listeners.add(fn)
     return () => listeners.delete(fn)
+  },
+}
+
+// ----- display preferences -----
+const LANG_KEY = 'jlpt-vocab:lang:v1'
+
+function readLang() {
+  try {
+    const v = localStorage.getItem(LANG_KEY)
+    return LANGS.includes(v) ? v : DEFAULT_LANG
+  } catch {
+    return DEFAULT_LANG
+  }
+}
+
+let lang = readLang()
+
+export const prefs = {
+  getLang: () => lang,
+  setLang(v) {
+    if (!LANGS.includes(v) || v === lang) return
+    lang = v
+    localStorage.setItem(LANG_KEY, v)
+    listeners.forEach((fn) => fn())
   },
 }
