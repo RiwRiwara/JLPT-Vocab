@@ -60,6 +60,26 @@ export function sampleQueue(queue, sampleSize) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 /**
+ * Merge freshly-translated glosses with the previously committed ones so a
+ * run that fails to (re)translate an item never overwrites a good committed
+ * gloss with ''. Cache wins when present; otherwise fall back to the
+ * existing committed value; otherwise ''.
+ *
+ * `existing` is ignored entirely (treated as absent) when its length doesn't
+ * match `words` — a mismatch means the files are out of sync and blindly
+ * merging by index would silently corrupt data instead of just losing it.
+ *
+ * @param {Array} words - the level's word entries, each `[expr, reading, meaning]`
+ * @param {Record<string,string>} cache - gloss cache, keyed by English meaning
+ * @param {string[] | undefined | null} existing - previously committed glosses for this level, by index
+ * @returns {string[]}
+ */
+export function mergeGlosses(words, cache, existing) {
+  const safeExisting = Array.isArray(existing) && existing.length === words.length ? existing : null
+  return words.map((w, i) => cache[w[2]] || safeExisting?.[i] || '')
+}
+
+/**
  * Translate one batch. Retries resend only the items still outstanding, and
  * every valid translation is kept even if some items never validate — one
  * stubborn item no longer throws away 49 good ones or re-pays for them.
@@ -150,8 +170,19 @@ async function main() {
   }
 
   for (const lv of args.levels) {
-    const out = data[lv].map((w) => cache[w[2]] ?? '')
-    writeFileSync(`src/data/th/${lv}.json`, JSON.stringify(out))
+    const path = `src/data/th/${lv}.json`
+    let existing = null
+    try {
+      existing = JSON.parse(readFileSync(path, 'utf8'))
+    } catch {
+      existing = null // absent or unreadable — treat as all-empty
+    }
+    if (existing !== null && (!Array.isArray(existing) || existing.length !== data[lv].length)) {
+      console.warn(`  warning: existing ${path} has ${existing.length ?? '?'} entries, expected ${data[lv].length} — ignoring it entirely`)
+      existing = null
+    }
+    const out = mergeGlosses(data[lv], cache, existing)
+    writeFileSync(path, JSON.stringify(out))
     const done = out.filter(Boolean).length
     console.log(`${lv}: ${done}/${out.length} translated`)
   }
