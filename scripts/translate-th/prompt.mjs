@@ -41,19 +41,32 @@ function extractJson(text) {
 }
 
 /**
- * @returns {{glosses: Record<number,string>, error: string|null}}
+ * Salvages every item that validates instead of discarding the whole batch
+ * over one bad item — the caller retries only what's in `invalid`.
+ *
+ * @returns {{glosses: Record<number,string>, invalid: Array<{n:number, reason:string}>, error: string|null}}
+ *   `error` is reserved for a whole-response failure (no JSON object at all),
+ *   in which case `glosses` and `invalid` are both empty — there's nothing
+ *   usable to salvage or attribute to a specific item.
  */
 export function parseResponse(text, items) {
   const obj = extractJson(String(text || ''))
-  if (!obj || typeof obj !== 'object') return { glosses: {}, error: 'no JSON object in response' }
+  if (!obj || typeof obj !== 'object') return { glosses: {}, invalid: [], error: 'no JSON object in response' }
 
   const glosses = {}
+  const invalid = []
   for (const it of items) {
     const raw = obj[it.n] ?? obj[String(it.n)]
-    if (raw === undefined) return { glosses: {}, error: `missing item ${it.n}` }
-    const reason = validateGloss(raw)
-    if (reason) return { glosses: {}, error: `item ${it.n} invalid: ${reason}` }
+    if (raw === undefined) {
+      invalid.push({ n: it.n, reason: 'missing' })
+      continue
+    }
+    const reason = validateGloss(raw, it.meaning)
+    if (reason) {
+      invalid.push({ n: it.n, reason })
+      continue
+    }
     glosses[it.n] = raw.trim()
   }
-  return { glosses, error: null }
+  return { glosses, invalid, error: null }
 }

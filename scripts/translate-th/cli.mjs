@@ -59,22 +59,41 @@ export function sampleQueue(queue, sampleSize) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-/** Translate one batch, retrying the whole batch on any validation failure. */
+/**
+ * Translate one batch. Retries resend only the items still outstanding, and
+ * every valid translation is kept even if some items never validate — one
+ * stubborn item no longer throws away 49 good ones or re-pays for them.
+ *
+ * @returns {{glosses: Record<number,string>, missing: Array}} `missing` holds
+ *   the original item objects that never validated within RETRIES attempts.
+ */
 async function translateBatch(provider, model, items) {
-  let lastError = 'not attempted'
-  for (let attempt = 1; attempt <= RETRIES; attempt++) {
+  let outstanding = items
+  const glosses = {}
+  for (let attempt = 1; attempt <= RETRIES && outstanding.length > 0; attempt++) {
+    let lastError
     try {
-      const text = await PROVIDERS[provider](model, buildPrompt(items))
-      const { glosses, error } = parseResponse(text, items)
-      if (!error) return glosses
-      lastError = error
+      const text = await PROVIDERS[provider](model, buildPrompt(outstanding))
+      const { glosses: got, invalid, error } = parseResponse(text, outstanding)
+      if (error) {
+        lastError = error
+      } else {
+        Object.assign(glosses, got)
+        const invalidNs = new Set(invalid.map((x) => x.n))
+        outstanding = outstanding.filter((it) => invalidNs.has(it.n))
+        if (invalid.length) {
+          lastError = invalid.map((x) => `item ${x.n}: ${x.reason}`).join('; ')
+        }
+      }
     } catch (e) {
       lastError = e.message
     }
-    console.warn(`  retry ${attempt}/${RETRIES}: ${lastError}`)
-    await sleep(500 * attempt)
+    if (outstanding.length > 0) {
+      console.warn(`  retry ${attempt}/${RETRIES}: ${lastError}`)
+      await sleep(500 * attempt)
+    }
   }
-  throw new Error(lastError)
+  return { glosses, missing: outstanding }
 }
 
 async function main() {
@@ -107,14 +126,18 @@ async function main() {
     const slice = queue.slice(i, i + BATCH)
     const items = slice.map((it, n) => ({ n: n + 1, ...it }))
     process.stdout.write(`[${i + slice.length}/${queue.length}] `)
-    try {
-      const glosses = await translateBatch(args.provider, args.model, items)
-      for (const it of items) cache[it.meaning] = glosses[it.n]
-      saveCache(cachePath, cache) // checkpoint every batch — runs are resumable
+    const { glosses, missing } = await translateBatch(args.provider, args.model, items)
+    // Cache every item that validated, even when the batch was only partially
+    // successful — a stubborn item no longer costs the whole batch's work.
+    for (const it of items) {
+      if (glosses[it.n] !== undefined) cache[it.meaning] = glosses[it.n]
+    }
+    saveCache(cachePath, cache) // checkpoint every batch — runs are resumable
+    if (missing.length) {
+      failed.push(...missing.map((it) => it.meaning))
+      console.log(`partial: ${items.length - missing.length}/${items.length} ok, ${missing.length} failed`)
+    } else {
       console.log('ok')
-    } catch (e) {
-      console.log(`FAILED: ${e.message}`)
-      failed.push(...slice.map((it) => it.meaning))
     }
   }
 
