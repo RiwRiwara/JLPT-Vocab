@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { LEVELS, WORDS, wordId } from '../data/index.js'
-import { store } from '../store.js'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { LEVELS, WORDS, TH, wordId } from '../data/index.js'
+import { store, prefs } from '../store.js'
+import { meaningFor } from '../lang.js'
 
 function shuffle(arr) {
   const a = [...arr]
@@ -23,6 +24,7 @@ export default function Flashcards() {
   const [pos, setPos] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [got, setGot] = useState(0)
+  const lang = useSyncExternalStore(store.subscribe, prefs.getLang)
 
   // drag state — kept in refs during the gesture, mirrored to state for render
   const [drag, setDrag] = useState({ dx: 0, dragging: false })
@@ -30,7 +32,7 @@ export default function Flashcards() {
   const gesture = useRef(null)
 
   const pool = useMemo(() => {
-    const all = WORDS[level].map((w, i) => ({ w, id: wordId(level, i) }))
+    const all = WORDS[level].map((w, i) => ({ w, th: TH[level][i], id: wordId(level, i) }))
     return skipKnown ? all.filter((x) => !store.isKnown(x.id)) : all
   }, [level, skipKnown])
 
@@ -173,7 +175,8 @@ export default function Flashcards() {
   }
 
   // ----- card -----
-  const { w } = deck[pos]
+  const { w, th } = deck[pos]
+  const meaning = meaningFor(w[2], th, lang)
   const next = deck[pos + 1]
 
   const dx = leaving ? leaving * 560 : drag.dx
@@ -222,7 +225,8 @@ export default function Flashcards() {
           {flipped ? (
             <>
               <div className="reading jp">{w[1]}</div>
-              <div className="meaning">{w[2]}</div>
+              <div className="meaning">{meaning.primary}</div>
+              {meaning.secondary && <div className="meaning-alt">{meaning.secondary}</div>}
             </>
           ) : (
             <div className="hint">แตะเพื่อเปิดเฉลย · ปัดซ้าย/ขวาเพื่อตอบ</div>
