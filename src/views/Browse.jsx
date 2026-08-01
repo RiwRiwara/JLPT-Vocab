@@ -1,6 +1,8 @@
 import { useMemo, useState, useSyncExternalStore } from 'react'
-import { LEVELS, WORDS, wordId } from '../data/index.js'
-import { store } from '../store.js'
+import { LEVELS, WORDS, TH, wordId } from '../data/index.js'
+import { store, prefs } from '../store.js'
+import { meaningFor } from '../lang.js'
+import { matchWord } from '../search.js'
 
 const PAGE = 100
 const SET_SIZE = 50
@@ -49,22 +51,21 @@ export default function Browse() {
   const [script, setScript] = useState('all')
   const [group, setGroup] = useState('none')
   const [limit, setLimit] = useState(PAGE)
+  const lang = useSyncExternalStore(store.subscribe, prefs.getLang)
   useSyncExternalStore(store.subscribe, () => store.countKnown(level) + ':' + status)
 
   const words = WORDS[level]
+  const thWords = TH[level]
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase()
     let list = words.map((w, i) => [w, i])
-    if (needle)
-      list = list.filter(
-        ([w]) => w[0].includes(needle) || w[1].includes(needle) || w[2].toLowerCase().includes(needle)
-      )
+    if (needle) list = list.filter(([w, i]) => matchWord(w, thWords[i], needle))
     if (status !== 'all')
       list = list.filter(([, i]) => store.isKnown(wordId(level, i)) === (status === 'known'))
     if (script !== 'all') list = list.filter(([w]) => hasKanji(w[0]) === (script === 'kanji'))
     return list
-  }, [words, q, status, script, level])
+  }, [words, thWords, q, status, script, level])
 
   const shown = results.slice(0, limit)
 
@@ -115,7 +116,7 @@ export default function Browse() {
       <div className="browse-sticky">
         <input
           className="search"
-          placeholder="ค้นหา — คันจิ / คำอ่าน / ความหมาย EN"
+          placeholder="ค้นหา — คันจิ / คำอ่าน / ความหมาย ไทย-EN"
           value={q}
           onChange={(e) => {
             setQ(e.target.value)
@@ -185,7 +186,15 @@ export default function Browse() {
                   <span className="expr jp">{w[0]}</span>
                   <span className="body">
                     <div className="reading jp">{w[1]}</div>
-                    <div className="meaning">{w[2]}</div>
+                    {(() => {
+                      const m = meaningFor(w[2], thWords[i], lang)
+                      return (
+                        <>
+                          <div className="meaning">{m.primary}</div>
+                          {m.secondary && <div className="meaning-alt">{m.secondary}</div>}
+                        </>
+                      )
+                    })()}
                   </span>
                   <button
                     className={'known-mark' + (known ? ' on' : '')}

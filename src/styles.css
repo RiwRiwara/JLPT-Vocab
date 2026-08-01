@@ -26,6 +26,7 @@ body {
 /* ---------- header (sticky) ---------- */
 header {
   display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px 16px;
   padding: 14px 0; border-bottom: 2px solid var(--ink); margin-bottom: 24px;
   position: sticky; top: 0; z-index: 30; background: var(--paper);
 }
@@ -234,4 +235,28 @@ footer a { color: var(--graphite); }
   .word-row .expr { grid-column: 1 / -1; }
   .card .expr { font-size: 40px; }
   .quiz-q .expr { font-size: 42px; }
+}
+
+/* ----- language switch ----- */
+.lang-switch {
+  display: flex;
+  gap: 4px;
+}
+.lang-switch button {
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--ink, #111111);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.lang-switch button.active {
+  background: var(--ink, #111111);
+  color: var(--paper, #fafaf7);
+}
+
+/* secondary meaning line, shown only in TH+EN */
+.meaning-alt {
+  opacity: 0.5;
+  font-size: 0.9em;
 }
