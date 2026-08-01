@@ -112,7 +112,7 @@ n1 2699
 Create `tests/data.test.js`:
 
 ```js
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { LEVELS, WORDS, TH, thFor } from '../src/data/index.js'
 
 describe('Thai data files', () => {
@@ -136,13 +136,26 @@ describe('Thai data files', () => {
 })
 
 describe('thFor', () => {
+  // These tests write into the shared TH arrays because thFor reads them
+  // directly. Restore afterwards so the alignment tests above stay valid
+  // whatever order the files run in.
+  const saved = []
+  afterEach(() => {
+    for (const [lv, i, v] of saved) TH[lv][i] = v
+    saved.length = 0
+  })
+  const setTh = (lv, i, v) => {
+    saved.push([lv, i, TH[lv][i]])
+    TH[lv][i] = v
+  }
+
   it('returns the gloss at an index', () => {
-    TH.N5[0] = '  อ่า!, โอ้!  '
+    setTh('N5', 0, '  อ่า!, โอ้!  ')
     expect(thFor('N5', 0)).toBe('อ่า!, โอ้!')
   })
 
   it('returns an empty string for an untranslated entry', () => {
-    TH.N5[1] = ''
+    setTh('N5', 1, '')
     expect(thFor('N5', 1)).toBe('')
   })
 
